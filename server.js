@@ -9,13 +9,21 @@ const { nanoid } = require('nanoid');
 require('dotenv').config()
 const cors = require('cors');
 const app = express();
+const mongo_uri = process.env.MONGO_URI
 
-
-// links 
 /**
+ * LINKS
+ * ------
+ * 
  * https://www.mongodb.com/blog/post/quick-start-nodejs-mongodb--how-to-get-connected-to-your-database
  * https://zellwk.com/blog/local-mongodb/
  * https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
+ * 
+ * 
+ * TODO:
+ * -[ ] Check if  url exist before inserting in the database
+ * -[ ] Check if an original url is already in the database before inserting it
+ * -[ ] Check if short url exists in the database before requesting using GET METHOD
  * 
  * **/
 
@@ -31,7 +39,7 @@ app.use(bodyParser.json())
 // mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true } )
 
 
-mongoose.connect(process.env.MONGO_LOCAL_URI, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => {
+mongoose.connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => {
   console.log("Connected to Database");
 }).catch((err) => {
   console.log("Not Connected to Database ERROR! ", err);
@@ -39,7 +47,7 @@ mongoose.connect(process.env.MONGO_LOCAL_URI, { useNewUrlParser: true, useUnifie
 const db = mongoose.connection;
 
 db.once('open', _ => {
-  console.log('Database connected', process.env.MONGO_LOCAL_URI)
+  console.log('Database connected', mongo_uri)
 })
 
 db.on('error', err => {
@@ -85,8 +93,8 @@ app.get('/', function (req, res) {
 app.get('/api/shorturl/:shortenedurl', (req, res) => {
   let shortenedurl = req.params.shortenedurl;
 
-  UrlShortener.find({ short_url: shortenedurl }, (error, data) => {
-    if (error) console.error(error)
+  UrlShortener.find({short_url : shortenedurl }, (error, data) => {
+    if(error) console.error(error)
 
     let originalurl = data[0]['original_url']
     res.redirect(originalurl)
@@ -98,7 +106,7 @@ app.get('/api/shorturl/:shortenedurl', (req, res) => {
 app.post('/api/shorturl/new', (req, res, next) => {
   const { url } = req.body;
   let slug = nanoid(10).toLowerCase()
-  // 1. step 1 check if the url is a valid
+  // 1. step 1 check if the url is exists
 
 
   // 2. Add url to the database
@@ -114,6 +122,7 @@ app.post('/api/shorturl/new', (req, res, next) => {
   } catch (error) {
     next(eror)
   }
+
 })
 
 
